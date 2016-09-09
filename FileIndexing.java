@@ -57,12 +57,10 @@ public class FileIndexing {
 
 			while ((thisLine = br.readLine()) != null) {
 				String[] words = thisLine.split(" ");
-				int i = 0;
 				
 				while(i<words.length) {
 					if(k.equals(words[i]))
 						return true;
-				i++;
 				}
 			}
 
