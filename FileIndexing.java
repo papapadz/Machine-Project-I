@@ -6,7 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
 
-public class FileIndexing_2 {
+public class FileIndexing{
 
 	public static int x = 0;
 	
