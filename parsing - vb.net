@@ -1,0 +1,36 @@
+Public Class Form1
+
+    Private Sub btnIndex_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnIndex.Click
+        Dim fileReader As String
+        Dim filepath As String
+        Dim txtlength As Integer
+        Dim chCounter As Integer
+        Dim wrd As String
+
+        filepath = "C:\Users\Norwin\Desktop\MIT223\Quiz.txt"
+        'filepath = txtpath.Text
+
+        fileReader = My.Computer.FileSystem.ReadAllText(filepath, System.Text.Encoding.Default)
+        txtlength = Len(fileReader)
+
+        'read the each character from fileReader
+        For chCounter = 0 To (txtlength - 2)
+            While ((fileReader(chCounter) <> " ") And (fileReader(chCounter) <> vbCr) And (fileReader(chCounter) <> vbLf) And (fileReader(chCounter) <> vbCrLf) And (fileReader(chCounter) <> vbTab))
+                'compare each character to the unqualified characters.
+
+                If ((fileReader(chCounter) <> "1") Or (fileReader(chCounter) <> "2") Or (fileReader(chCounter) <> "3") Or (fileReader(chCounter) <> "4") Or (fileReader(chCounter) <> "5") Or (fileReader(chCounter) <> "6") Or (fileReader(chCounter) <> "7") Or (fileReader(chCounter) <> "8") Or (fileReader(chCounter) <> "9") Or (fileReader(chCounter) <> "0") Or (fileReader(chCounter) <> "-") Or (fileReader(chCounter) <> "(") Or (fileReader(chCounter) <> ")") Or (fileReader(chCounter) <> "]") Or (fileReader(chCounter) <> "]") Or (fileReader(chCounter) <> "}") Or (fileReader(chCounter) <> "}") Or (fileReader(chCounter) <> "/") Or (fileReader(chCounter) <> ".") Or (fileReader(chCounter) <> ",") Or (fileReader(chCounter) <> "?") Or (fileReader(chCounter) <> Chr(255))) Then
+                    wrd = wrd + fileReader(chCounter)
+                    chCounter = chCounter + 1
+                End If
+
+            End While
+            If Len(wrd) >= 4 Then           'qualify the valid number of characters
+                wrd = wrd.ToLower           'lowercase all the characters
+                lst_words.Items.Add(wrd)    'add the words in a listbox
+                wrd = ""
+            Else
+                wrd = ""
+            End If
+        Next
+    End Sub
+End Class
