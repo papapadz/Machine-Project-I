@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 import org.json.*;
 
-public class FileIndexing_3 {
+public class FileIndexing {
 
 	private static int x = 0;
 	private static JSONObject obj = new JSONObject();
