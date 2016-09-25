@@ -1,54 +1,124 @@
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Scanner;
 
-public class FileIndexing{
+import org.json.*;
 
-	public static int x = 0;
+public class FileIndexing_3 {
+
+	private static int x = 0;
+	private static JSONObject obj = new JSONObject();
+	private static JSONArray j_array = new JSONArray();
+	private static File fn;
 	
-	public static void main(String[] args) {
-	
-		Scanner r = new Scanner(System.in);
+	public static void main(String[] args) throws Exception {
 		
+	Scanner r = new Scanner(System.in);
+	
+	int flag = 0;
+	
+	do {	
+		x = 0;
 		System.out.print("Enter keyword to find: ");
-		String keyword = r.next().toLowerCase(); //converts the entered keyword to lowercase.
+		/*no need lower case*/
+		String keyword = r.next(); //.toLowerCase(); //converts the entered keyword to lower case.
 		
 		System.out.print("Enter directory to search: ");
 		String myDir = r.next();
-		
 		
 		System.out.println("Search Results:");
 		
 		File dir = new File(myDir);
 		long start = System.nanoTime();
-		getList(keyword,dir);
-		Long exec = getExecTime(start);
 		
-		System.out.println( x + " result\\s found in " + exec + " milliseconds");
+		if(readFileIndex(keyword)) {
+			parseIndexFile();
+			int i = 1;
+			for(i = 1; i<j_array.length();i++)
+				System.out.println(j_array.getString(i));
+			
+			Long exec = getExecTime(start);
+			System.out.println( (i-1) + " result\\s found in " + exec + " milliseconds");
+		}
+		else {
+			obj.put("keyword", "");
+			int i = 1;
+			if(keyword.equalsIgnoreCase(obj.getString("keyword"))) {
+				for(i = 1; i<=obj.getInt("count");i++)
+					System.out.println(j_array.getString(i));
+					
+				Long exec = getExecTime(start);
+				System.out.println(obj.get("count")  + " result\\s found in " + exec + " milliseconds");
+				
+			}
+			else 
+				search(keyword, dir, start);
+		}
+		
+		System.out.print("Retry? [1] - YES, [0] - NO: ");
+		flag = r.nextInt();
+		
+	}while(flag!=0);
 		
 	}
 	
-	private static void getList(String keyword, final File dir) {
+	private static void search(String keyword, File dir, long start) throws Exception {
+		obj.remove("paths");
+		if(getList(keyword,dir)>0) {
+		obj.put("keyword", keyword);
+		obj.put("paths", j_array);
+		obj.put("count", x);
+		writeFile(keyword);
+		}
+		Long exec = getExecTime(start);
+		System.out.println( x + " result\\s found in " + exec + " milliseconds");
 		
+		
+	}
+	
+	private static void parseIndexFile() throws JSONException {
+		
+		BufferedReader br = null;
+		
+		try {
+				String thisLine;
+				br = new BufferedReader(new FileReader(fn));
+				thisLine = br.readLine();
+
+					JSONObject jo = new JSONObject(thisLine);
+					j_array = jo.getJSONArray("paths");
+					
+	
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+		
+			try {
+				if (br != null)br.close();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		}
+
+	}
+	
+	private static int getList(String keyword, final File dir) throws JSONException {
 		for (final File filename : dir.listFiles()) {
-	        if (filename.isDirectory()) { 
+	        if (filename.isDirectory()) 
 	            getList(keyword,filename);
-	            
-	        } else {
-	            if(readFile(keyword, filename.toString())) {
+	        else {
+	        	if(readFile(keyword, filename.toString())) {
 	            	x++;
-	            	System.out.println(filename);
-	            	//Directory where the indexed files are stored
-	            	String dir2 = "C:/Users/Rein/Desktop/MIT223/Index Directory";
-	            	File indexDir = new File(dir2);
-	            	writeFile(keyword, indexDir.toString(),filename.toString());	
+	            	j_array.put(x, filename.toString());
+	            	System.out.println(filename);	
 	            }
 	        }
 	    }
+		return x;
 	}
 	
 	private static boolean readFile(String k, String path) {
@@ -61,7 +131,8 @@ public class FileIndexing{
 				int i = 0; 
 				
 				while(i<words.length) {
-					if(k.equals(words[i].toLowerCase()))
+					/*made use of ignore case rather than to lower case*/
+					if(k.equalsIgnoreCase(words[i]))
 						return true;
 					i++;
 				}
@@ -79,6 +150,7 @@ public class FileIndexing{
 		return false;
 	}
 
+
 	private static long getExecTime(long startTime) {
 		
 		long endTime = System.nanoTime();
@@ -87,59 +159,29 @@ public class FileIndexing{
 		return duration;
 	}
 	
-	private static String getFileName(File file) {
-		String fileName = file.getName();
-		if (fileName.indexOf(".") > 0)
-            fileName = fileName.substring(0, fileName.lastIndexOf("."));
-      	return fileName;
+	private static void writeFile(String k) throws Exception{
+		File file = new File("C:\\index\\" + k + ".txt");
+		
+		try (FileWriter fw = new FileWriter(file)) {
+			fw.write(obj.toString());
+		}
+		
 	}
 	
-	private static void writeFile(String k, String i_path,String k_path){
-		BufferedWriter bw = null;
-		String delimiter = "=";
-		String p = "PATH";
-		String p_content = p + delimiter + k_path;
-		try{
-			File file = new File(i_path + "/" + k + ".txt");
-			FileWriter fw = new FileWriter(file,true);
-			bw = new BufferedWriter(fw);
-			if(!readFileIndex(k_path,file.toString())){
-				bw.write(p_content);
-		  		bw.newLine();
+	private static boolean readFileIndex(String keyword) throws Exception, ParseException {
+		
+		File indexDir = new File("C:\\index");
+			
+		for (final File filename : indexDir.listFiles()) {
+			String f = filename.getName();
+			
+			if(f.startsWith(keyword)) {
+				fn = filename;
+				return true;
+				}
 			}
-		}catch (IOException ioe) {
-			ioe.printStackTrace();
-		}
-		finally
-		{ 
-	   		try{
-	      		if(bw!=null)
-		 			bw.close();
-	   		}catch(Exception ex){
-	       		System.out.println("Error in closing the BufferedWriter"+ex);
-	    	}
-		}
-	}
-	
-	private static boolean readFileIndex(String content,String path) {
-		BufferedReader br = null;
-		try {
-			String thisLine;
-			br = new BufferedReader(new FileReader(path));
-			while((thisLine = br.readLine()) != null){
-			    String[] words = thisLine.split("=");
-			    if(content.equals(words[1]))
-			    	return true;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (br != null)br.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
-		return false;
+			
+	 return false;
+		
 	}	
 }
