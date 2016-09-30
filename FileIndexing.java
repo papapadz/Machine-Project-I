@@ -80,6 +80,14 @@ public class FileIndexing {
 		
 	}
 	
+	
+	
+	//SUGGESTION
+	
+	//Can we add something like aliasing to paths (e.g. the path 'c:/text/lair/mydoc/ssa/ac/a' 
+	//will had an alias that is 'shorter' ) because I think it will also had an impact to the speed 
+	//in the succeeding searching of keywords because it will parse or load less characters.
+	
 	private static void parseIndexFile() throws JSONException {
 		
 		BufferedReader br = null;
