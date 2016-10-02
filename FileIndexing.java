@@ -12,7 +12,7 @@ public class FileIndexing {
 
 	private static int x = 0;
 	private static JSONObject obj = new JSONObject();
-	private static JSONArray j_array = new JSONArray();
+	private static JSONArray j_array_key = new JSONArray();
 	private static File fn;
 	
 	public static void main(String[] args) throws Exception {
@@ -20,6 +20,7 @@ public class FileIndexing {
 	Scanner r = new Scanner(System.in);
 	
 	int flag = 0;
+	obj.put("keyword", "");
 	
 	do {	
 		x = 0;
@@ -35,29 +36,26 @@ public class FileIndexing {
 		File dir = new File(myDir);
 		long start = System.nanoTime();
 		
+		int i = 1;
+		if(keyword.equalsIgnoreCase(obj.getString("keyword"))) {
+			for(i = 1; i<=obj.getInt("count");i++)
+				System.out.println(j_array_key.getString(i));
+				
+			Long exec = getExecTime(start);
+			System.out.println(obj.get("count")  + " result\\s found in " + exec + " milliseconds");
+			
+		}
+		else
 		if(readFileIndex(keyword)) {
 			parseIndexFile();
-			int i = 1;
-			for(i = 1; i<j_array.length();i++)
-				System.out.println(j_array.getString(i));
+			for(i = 1; i<j_array_key.length();i++)
+				System.out.println(j_array_key.getString(i));
 			
 			Long exec = getExecTime(start);
 			System.out.println( (i-1) + " result\\s found in " + exec + " milliseconds");
 		}
-		else {
-			obj.put("keyword", "");
-			int i = 1;
-			if(keyword.equalsIgnoreCase(obj.getString("keyword"))) {
-				for(i = 1; i<=obj.getInt("count");i++)
-					System.out.println(j_array.getString(i));
-					
-				Long exec = getExecTime(start);
-				System.out.println(obj.get("count")  + " result\\s found in " + exec + " milliseconds");
-				
-			}
-			else 
-				search(keyword, dir, start);
-		}
+		else
+			search(keyword, dir, start);
 		
 		System.out.print("Retry? [1] - YES, [0] - NO: ");
 		flag = r.nextInt();
@@ -69,14 +67,15 @@ public class FileIndexing {
 	private static void search(String keyword, File dir, long start) throws Exception {
 		obj.remove("paths");
 		if(getList(keyword,dir)>0) {
-		obj.put("keyword", keyword);
-		obj.put("paths", j_array);
-		obj.put("count", x);
-		writeFile(keyword);
+			//obj.put("directory", dir.toString());
+			obj.put("keyword", keyword);
+			obj.put("paths", j_array_key);
+			obj.put("count", x);
+			writeFile(keyword);
 		}
+		
 		Long exec = getExecTime(start);
 		System.out.println( x + " result\\s found in " + exec + " milliseconds");
-		
 		
 	}
 	
@@ -90,7 +89,7 @@ public class FileIndexing {
 				thisLine = br.readLine();
 
 					JSONObject jo = new JSONObject(thisLine);
-					j_array = jo.getJSONArray("paths");
+					j_array_key = jo.getJSONArray("paths");
 					
 	
 		} catch (IOException e) {
@@ -113,7 +112,7 @@ public class FileIndexing {
 	        else {
 	        	if(readFile(keyword, filename.toString())) {
 	            	x++;
-	            	j_array.put(x, filename.toString());
+	            	j_array_key.put(x, filename.toString());
 	            	System.out.println(filename);	
 	            }
 	        }
@@ -178,8 +177,8 @@ public class FileIndexing {
 			if(f.startsWith(keyword)) {
 				fn = filename;
 				return true;
-				}
 			}
+		}
 			
 	 return false;
 		
