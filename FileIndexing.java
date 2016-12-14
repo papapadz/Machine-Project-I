@@ -4,93 +4,106 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 import org.json.*;
 
 public class FileIndexing {
 
-	private static int x = 0;
-	private static JSONObject obj = new JSONObject();
-	private static JSONArray j_array_key = new JSONArray();
+	private static Scanner r = new Scanner(System.in);
+	
+	public static JSONObject obj = new JSONObject();
+	public static JSONArray j_array_key = new JSONArray();
 	private static File fn;
 	private static int fc = 0;
 	private static String d; 
-	private static String k;
+	public static String k;
+	private static int pointer = 0;
+	public static File dir;
 	
-	public static void main(String[] args) throws Exception {
-		
-	Scanner r = new Scanner(System.in);
+	public static void main(String args[]) throws ParseException, Exception {
+		startIndex();
+	}
 	
-	int flag = 0;
-	obj.put("keyword", ""); //create new JSON objects
-	obj.put("dir", "");
-	
-	do {	
-		x = 0;
-		System.out.print("Enter keyword to find: ");
+	public static void startIndex() throws ParseException, Exception {
 		
-		k = r.next().toLowerCase(); //all input is set to lower case.
+		int flag = 0;
+		obj.put("keyword", ""); //create new JSON objects
+		obj.put("dir", "");
 		
-		System.out.print("Enter directory to search: ");
-		String myDir = r.next().toLowerCase();
-		
-		System.out.println("Search Results:");
-		
-		File dir = new File(myDir); //creates a new File object
-		d = dir.toString();
-		long start = System.nanoTime(); //record start time
-		
-		int i = 1; //counter for JSON Objects 
-		if(k.equals(obj.getString("keyword")) && (d.equals(obj.getString("dir")))) {//System.out.println("case 1");
-			for(i = 1; i<=obj.getInt("count");i++)
-				System.out.println(j_array_key.getString(i));
+		do {	
+			System.out.print("Enter keyword to find: ");
+			
+			k = r.next().toLowerCase(); //all input is set to lower case.
+			
+			System.out.print("Enter directory to search: ");
+			String myDir = r.next().toLowerCase();
+			
+			System.out.println("Search Results:");
+			
+			dir = new File(myDir); //creates a new File object
+			d = dir.toString();
+			long start = System.nanoTime(); //record start time
+			
+			if(checkCache()) {
+				System.out.println("Searching CACHE. . .");
+				for(int i = 1; i<j_array_key.length();i++)
+					System.out.println("CACHE>>> "+j_array_key.getString(i));
+			}
+			else
+			if(readFileIndex(0)) { //System.out.println("case 2");
+				System.out.println("Searching INDEX FILES. . .");
+				for(int i = 1; i<j_array_key.length();i++)
+					System.out.println("INDEX FILE>>> "+j_array_key.getString(i));
 				
-			Long exec = getExecTime(start); // calculate execution time
-			System.out.println(obj.get("count")  + " result\\s found in " + exec + " milliseconds");
+				setObj(d);
+				
+			}
+			else {//System.out.println("case 3");
+				obj = new JSONObject();
+				j_array_key = new JSONArray();
+				System.out.println("Searching DIRECTORY. . .");
+				Thread MT1,MT2,MT3,MT4,MT5,MT6,MT7,MT8;			
+				
+				//start threading
+				MT1 = new Thread(new MultiThread("THREAD 1"));
+				MT1.start();
+				MT2 = new Thread(new MultiThread("THREAD 2"));
+				MT2.sleep(200);
+				MT2.start();
+				MT3 = new Thread(new MultiThread("THREAD 3"));
+				MT3.sleep(200);
+				MT3.start();
+				
+				MT1.join();
+				MT2.join();
+				MT3.join();
+				
+				if(j_array_key.length()>0) {
+					setObj(d);
+					writeFile(); //create text file for indexes
+				}
+			}
 			
-		}
-		else
-		if(readFileIndex(0)) { //System.out.println("case 2");
-			for(i = 1; i<j_array_key.length();i++)
-				System.out.println(j_array_key.getString(i));
 			
-			obj.put("dir", d);			//create new JSON Objects
-			obj.put("keyword", k);
-			obj.put("paths", j_array_key);
-			obj.put("count", j_array_key.length()-1);
+			System.out.println( j_array_key.length() + " result\\s found in " + getExecTime(start) + " milliseconds");
 			
-			Long exec = getExecTime(start);
-			System.out.println( (i-1) + " result\\s found in " + exec + " milliseconds");
-		}
-		else {//System.out.println("case 3");
-			search(dir, start); //recursive search
-		}
-		
-		System.out.print("Retry? [1] - YES, [0] - NO: ");
-		flag = r.nextInt();
-		
-	}while(flag!=0);
+			System.out.print("Retry? [1] - YES, [0] - NO: ");
+			flag = r.nextInt();
+	
+		}while(flag!=0);
 		
 	}
 	
-	private static void search(File dir, long start) throws Exception {
-		obj.remove("paths");
-		if(getList(dir)>0) { //if found at least 1 file, create JSON Object 
-			obj.put("dir", d);
-			obj.put("keyword", k);
-			obj.put("paths", j_array_key);
-			obj.put("count", x);
-			writeFile(); //create text file for indexes
-		}
-		
-		Long exec = getExecTime(start);
-		System.out.println( x + " result\\s found in " + exec + " milliseconds");
-		
+	private synchronized static void setObj(String dd) throws Exception {
+		FileIndexing.obj.put("dir", dd);
+		FileIndexing.obj.put("paths", j_array_key);
+		FileIndexing.obj.put("keyword", k);
 	}
-	
+
 	private static boolean parseIndexFile() throws JSONException {
-		
+	
 		BufferedReader br = null; 
 		
 		try {
@@ -119,54 +132,8 @@ public class FileIndexing {
 		
 	}
 	
-	private static int getList(final File dir) throws JSONException {
-		for (final File filename : dir.listFiles()) {
-	        if (filename.isDirectory()) 
-	            getList(filename); //recursive search
-	        else {
-	        	if(readFile(filename.toString())) {	//read file and search for the keyword
-	            	x++;							//add to counter and add JSON Object to JSON Array
-	            	j_array_key.put(x, filename.toString());
-	            	System.out.println(filename);	//display file
-	            }
-	        }
-	    }
-		return x; //returns the number of files searched
-	}
 	
-	private static boolean readFile(String path) {
-		BufferedReader br = null;
-		try {
-			String thisLine;
-			br = new BufferedReader(new FileReader(path));
-			while ((thisLine = br.readLine()) != null) { //reads text file per line
-				String[] words = thisLine.split(" "); //stores every word in an Array 
-				int i = 0; 
-				
-				while(i<words.length) {
-					
-					if(words[i].length()>=k.length()) //compare character count 
-						if((words[i]).toLowerCase().contains(k)) // parsing made through CONTAINS function
-							return true;
-					
-					i++;
-				}
-			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (br != null)br.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
-		return false;
-	}
-
-
-	private static long getExecTime(long startTime) {
+	private static synchronized long getExecTime(long startTime) {
 		
 		long endTime = System.nanoTime();
 
@@ -174,7 +141,7 @@ public class FileIndexing {
 		return duration;
 	}
 	
-	private static void writeFile() throws Exception{
+	static void writeFile() throws Exception{
 		String n = k;
 		readFileIndex(1); //check the same index file 
 		if(fc>0) { //if duplicate file, change filename
@@ -190,7 +157,7 @@ public class FileIndexing {
 		
 	}
 	
-	private static boolean readFileIndex(int state) throws Exception, ParseException {
+	private static synchronized boolean readFileIndex(int state) throws Exception, ParseException {
 		
 		if(state==1) //1 for counting index files, 0 for reading index files
 			fc = 0;
@@ -211,4 +178,15 @@ public class FileIndexing {
 		}
 	 return false;		
 	}
+	
+	private static boolean checkCache() throws JSONException {
+		
+		if(obj.get("keyword").equals(k) && obj.get("dir").equals(d)) {	//if the same directory, get all the path 
+			j_array_key = obj.getJSONArray("paths"); //save result to JSON Array
+			return true;
+		}
+		
+		return false;
+	}
+	
 }
